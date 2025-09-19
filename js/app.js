@@ -1,141 +1,199 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Sample Data (replace with actual fetched data or parsed Excel data) ---
+    let ordersData = [
+        { id: 'JM-1006', date: '2025-09-17', customer: 'Priya Sharma', items: 2, amount: 15200, status: 'pending' },
+        { id: 'JM-1005', date: '2025-09-16', customer: 'Leena Rao', items: 4, amount: 45200, status: 'pending' },
+        { id: 'JM-1004', date: '2025-09-15', customer: 'Arjun Patel', items: 1, amount: 4200, status: 'cancelled' },
+        { id: 'JM-1003', date: '2025-09-14', customer: 'Sana Kapoor', items: 3, amount: 27800, status: 'delivered' },
+        { id: 'JM-1002', date: '2025-09-12', customer: 'Ravi Mehra', items: 1, amount: 5600, status: 'shipped' },
+        { id: 'JM-1001', date: '2025-09-10', customer: 'Anita Joshi', items: 2, amount: 12400, status: 'pending' },
+        { id: 'JM-999', date: '2025-09-08', customer: 'Alok Verma', items: 5, amount: 35000, status: 'shipped' },
+        { id: 'JM-998', date: '2025-09-05', customer: 'Deepa Singh', items: 1, amount: 8500, status: 'delivered' },
+    ];
 
-// Sample dataset (converted from project)
-const orders = [
-  {id: "JM-1001", date: "2025-09-10", customer: "Anita Joshi", items: 2, amount: 12400, status: "pending", details: "2x Diamond stud, 1x polishing"},
-  {id: "JM-1002", date: "2025-09-12", customer: "Ravi Mehra", items: 1, amount: 5600, status: "shipped", details: "Gold necklace"},
-  {id: "JM-1003", date: "2025-09-14", customer: "Sana Kapoor", items: 3, amount: 27800, status: "delivered", details: "Custom ring set"},
-  {id: "JM-1004", date: "2025-09-15", customer: "Arjun Patel", items: 1, amount: 4200, status: "cancelled", details: "Refund processed"},
-  {id: "JM-1005", date: "2025-09-16", customer: "Leena Rao", items: 4, amount: 45200, status: "pending", details: "Engagement set + cleaning"},
-];
+    let currentFilters = {
+        status: 'all',
+        sortBy: 'date-desc',
+        searchQuery: ''
+    };
 
-// Utilities
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const ordersList = document.getElementById('orders-list');
+    const statusFilter = document.getElementById('status-filter');
+    const sortByFilter = document.getElementById('sort-by');
+    const globalSearch = document.getElementById('global-search');
+    const uploadInput = document.getElementById('excel-upload');
+    const uploadStatus = document.getElementById('upload-status');
 
-function formatCurrency(n){ return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n); }
-function formatDate(d){ return new Date(d).toLocaleDateString('en-IN'); }
+    // --- Utility Functions ---
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
 
-// State
-let state = {
-  filter: 'all',
-  sort: 'date_desc',
-  query: ''
-};
+    const formatCurrency = (amount) => {
+        return `₹${amount.toLocaleString('en-IN')}`;
+    };
 
-// DOM nodes
-const tbody = document.querySelector('#ordersTable tbody');
-const totalOrdersEl = document.getElementById('totalOrders');
-const totalRevenueEl = document.getElementById('totalRevenue');
-const pendingCountEl = document.getElementById('pendingCount');
-const deliveredCountEl = document.getElementById('deliveredCount');
-const statusFilter = document.getElementById('statusFilter');
-const sortSelect = document.getElementById('sortSelect');
-const searchInput = document.getElementById('searchInput');
-const modal = document.getElementById('modal');
-const modalContent = document.getElementById('modalContent');
-const modalClose = document.getElementById('modalClose');
-const downloadCsv = document.getElementById('downloadCsv');
+    // --- Render Orders Function ---
+    const renderOrders = (data) => {
+        // Clear previous orders, but keep the header
+        while (ordersList.children.length > 1) {
+            ordersList.removeChild(ordersList.lastChild);
+        }
 
-// Render functions
-function computeStats(list){
-  const total = list.length;
-  const revenue = list.reduce((s,o)=>s+o.amount,0);
-  const pending = list.filter(o=>o.status==='pending').length;
-  const delivered = list.filter(o=>o.status==='delivered').length;
-  totalOrdersEl.textContent = total;
-  totalRevenueEl.textContent = formatCurrency(revenue);
-  pendingCountEl.textContent = pending;
-  deliveredCountEl.textContent = delivered;
-}
+        data.forEach(order => {
+            const orderItem = document.createElement('div');
+            orderItem.classList.add('order-item');
+            // Add a border color based on status
+            orderItem.style.borderLeftColor = `var(--${order.status}-color)`;
 
-function renderTable(list){
-  tbody.innerHTML = '';
-  if(list.length===0){
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b">No orders found</td></tr>';
-    return;
-  }
-  list.forEach(o=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${o.id}</td>
-      <td>${formatDate(o.date)}</td>
-      <td>${o.customer}</td>
-      <td>${o.items}</td>
-      <td>${formatCurrency(o.amount)}</td>
-      <td><span class="status-pill status-${o.status}">${o.status}</span></td>
-      <td><button class="btn view-btn" data-id="${o.id}">View</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-  // attach view handlers
-  $$('.view-btn').forEach(btn=>btn.addEventListener('click', e=>{
-    const id = e.currentTarget.dataset.id;
-    openModal(id);
-  }));
-}
+            orderItem.innerHTML = `
+                <span class="order-id">${order.id}</span>
+                <span class="date">${formatDate(order.date)}</span>
+                <span class="customer">${order.customer}</span>
+                <span class="items">${order.items}</span>
+                <span class="amount">${formatCurrency(order.amount)}</span>
+                <span class="status ${order.status}">${order.status}</span>
+                <span class="actions"><button data-order-id="${order.id}">View</button></span>
+            `;
+            ordersList.appendChild(orderItem);
+        });
 
-function applyFilters(){
-  let filtered = orders.slice();
-  if(state.filter !== 'all') filtered = filtered.filter(o=>o.status===state.filter);
-  if(state.query && state.query.trim().length){
-    const q = state.query.toLowerCase();
-    filtered = filtered.filter(o => o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q) || String(o.amount).includes(q));
-  }
-  // sorting
-  if(state.sort === 'date_desc') filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));
-  if(state.sort === 'date_asc') filtered.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if(state.sort === 'amount_desc') filtered.sort((a,b)=>b.amount - a.amount);
-  if(state.sort === 'amount_asc') filtered.sort((a,b)=>a.amount - b.amount);
-  computeStats(filtered);
-  renderTable(filtered);
-}
+        // Add event listeners for 'View' buttons
+        ordersList.querySelectorAll('.actions button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const orderId = event.target.dataset.orderId;
+                alert(`Viewing details for Order ID: ${orderId}`);
+                // In a real application, you would open a modal or navigate to a detail page
+            });
+        });
+    };
 
-function openModal(orderId){
-  const ord = orders.find(o=>o.id===orderId);
-  if(!ord) return;
-  modalContent.innerHTML = `
-    <h2>Order ${ord.id}</h2>
-    <p><strong>Date:</strong> ${formatDate(ord.date)}</p>
-    <p><strong>Customer:</strong> ${ord.customer}</p>
-    <p><strong>Items:</strong> ${ord.items}</p>
-    <p><strong>Amount:</strong> ${formatCurrency(ord.amount)}</p>
-    <p><strong>Status:</strong> <span class="status-pill status-${ord.status}">${ord.status}</span></p>
-    <hr>
-    <p>${ord.details}</p>
-  `;
-  modal.setAttribute('aria-hidden','false');
-}
+    // --- Update Summary Cards ---
+    const updateSummaryCards = (data) => {
+        document.getElementById('total-orders-value').textContent = data.length;
+        const totalRevenue = data.reduce((sum, order) => sum + order.amount, 0);
+        document.getElementById('total-revenue-value').textContent = formatCurrency(totalRevenue);
+        document.getElementById('pending-orders-value').textContent = data.filter(order => order.status === 'pending').length;
+        document.getElementById('delivered-orders-value').textContent = data.filter(order => order.status === 'delivered').length;
+    };
 
-function closeModal(){ modal.setAttribute('aria-hidden','true'); modalContent.innerHTML=''; }
+    // --- Filter & Sort Logic ---
+    const applyFiltersAndSort = () => {
+        let filteredData = [...ordersData]; // Create a shallow copy to avoid modifying original
 
-// CSV download
-function toCSV(rows){
-  const header = ['Order ID','Date','Customer','Items','Amount','Status','Details'];
-  const lines = [header.join(',')];
-  rows.forEach(r=>{
-    const cols = [r.id, r.date, r.customer, r.items, r.amount, r.status, `"${(r.details||'').replace(/"/g,'""')}"`];
-    lines.push(cols.join(','));
-  });
-  return lines.join('\n');
-}
-function download(filename, content){
-  const blob = new Blob([content], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
-  a.remove(); URL.revokeObjectURL(url);
-}
+        // 1. Apply Search Query
+        if (currentFilters.searchQuery) {
+            const query = currentFilters.searchQuery.toLowerCase();
+            filteredData = filteredData.filter(order =>
+                order.id.toLowerCase().includes(query) ||
+                order.customer.toLowerCase().includes(query) ||
+                order.status.toLowerCase().includes(query)
+                // Add more fields to search as needed
+            );
+        }
 
-// Event bindings
-statusFilter.addEventListener('change', e=>{ state.filter = e.target.value; applyFilters(); });
-sortSelect.addEventListener('change', e=>{ state.sort = e.target.value; applyFilters(); });
-searchInput.addEventListener('input', e=>{ state.query = e.target.value; applyFilters(); });
-modalClose.addEventListener('click', closeModal);
-modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
-downloadCsv.addEventListener('click', ()=>{
-  const csv = toCSV(orders);
-  download('jewel-market-orders.csv', csv);
+        // 2. Apply Status Filter
+        if (currentFilters.status !== 'all') {
+            filteredData = filteredData.filter(order => order.status === currentFilters.status);
+        }
+
+        // 3. Apply Sorting
+        filteredData.sort((a, b) => {
+            if (currentFilters.sortBy === 'date-desc') {
+                return new Date(b.date) - new Date(a.date);
+            } else if (currentFilters.sortBy === 'date-asc') {
+                return new Date(a.date) - new Date(b.date);
+            } else if (currentFilters.sortBy === 'amount-desc') {
+                return b.amount - a.amount;
+            } else if (currentFilters.sortBy === 'amount-asc') {
+                return a.amount - b.amount;
+            }
+            return 0;
+        });
+
+        renderOrders(filteredData);
+        updateSummaryCards(filteredData); // Update cards based on filtered data
+    };
+
+    // --- Event Listeners for Filters ---
+    statusFilter.addEventListener('change', (event) => {
+        currentFilters.status = event.target.value;
+        applyFiltersAndSort();
+    });
+
+    sortByFilter.addEventListener('change', (event) => {
+        currentFilters.sortBy = event.target.value;
+        applyFiltersAndSort();
+    });
+
+    globalSearch.addEventListener('input', (event) => {
+        currentFilters.searchQuery = event.target.value;
+        applyFiltersAndSort();
+    });
+
+    // --- Excel Upload Functionality ---
+    uploadInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            uploadStatus.textContent = `Uploading: ${file.name}...`;
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0]; // Assuming first sheet
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    // Assuming the first row is headers, process subsequent rows
+                    if (json.length > 1) {
+                        const headers = json[0];
+                        const newOrders = json.slice(1).map(row => {
+                            let order = {};
+                            // Map columns to your data structure. Adjust indices/keys as needed.
+                            // Example: Order ID, Date, Customer, Items, Amount, Status
+                            order.id = row[0];
+                            order.date = row[1] ? new Date(Math.round((row[1] - 25569) * 86400 * 1000)).toISOString().split('T')[0] : ''; // Convert Excel date to YYYY-MM-DD
+                            order.customer = row[2];
+                            order.items = row[3];
+                            order.amount = row[4];
+                            order.status = row[5] ? row[5].toLowerCase() : 'unknown';
+                            return order;
+                        });
+
+                        // Append new orders to existing data or replace. For this example, let's replace.
+                        ordersData = newOrders;
+                        uploadStatus.textContent = `Successfully uploaded: ${file.name}`;
+                        currentFilters.searchQuery = ''; // Reset search on new data
+                        globalSearch.value = '';
+                        applyFiltersAndSort(); // Re-render with new data
+                    } else {
+                        uploadStatus.textContent = 'Excel file is empty or has no data rows.';
+                    }
+                } catch (error) {
+                    console.error("Error reading Excel file:", error);
+                    uploadStatus.textContent = `Error reading file: ${error.message}`;
+                }
+            };
+
+            reader.onerror = (e) => {
+                uploadStatus.textContent = `Failed to read file: ${reader.error.name}`;
+                console.error("FileReader error:", reader.error);
+            };
+
+            reader.readAsArrayBuffer(file);
+        } else {
+            uploadStatus.textContent = 'No file chosen';
+        }
+    });
+
+
+    // --- Initial Render ---
+    applyFiltersAndSort();
 });
-
-// initial render
-applyFilters();
