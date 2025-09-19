@@ -1,82 +1,122 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Jewel Market — Order Dashboard</title>
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurora Analytics - Jewel Market</title>
+    <link rel="stylesheet" href="aurora_styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="container">
-    <h1 class="logo">Jewel Market</h1>
-    <div class="search-area">
-      <input id="searchInput" placeholder="Search orders, customers, SKUs..." />
-      <button id="downloadCsv" title="Download CSV">⬇</button>
-    </div>
-  </div>
-</header>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-gem"></i>
+                <span>Aurora Analytics</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li class="active"><a href="#"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                    <li><a href="#"><i class="fas fa-users"></i> Customers</a></li>
+                    <li><a href="#"><i class="fas fa-boxes"></i> Products</a></li>
+                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                </ul>
+            </nav>
+            <div class="upload-section">
+                <h3>Data Source</h3>
+                <label for="excel-upload" class="upload-button">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload Excel
+                    <input type="file" id="excel-upload" accept=".xls, .xlsx" style="display: none;">
+                </label>
+                <div class="upload-info" id="upload-status">No file chosen</div>
+            </div>
+        </aside>
 
-<main class="container">
-  <section class="stats-grid" aria-label="Top statistics">
-    <div class="card">
-      <div class="card-title">Total Orders</div>
-      <div class="card-value" id="totalOrders">—</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Total Revenue</div>
-      <div class="card-value" id="totalRevenue">—</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Pending</div>
-      <div class="card-value" id="pendingCount">—</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Delivered</div>
-      <div class="card-value" id="deliveredCount">—</div>
-    </div>
-  </section>
+        <main class="main-content">
+            <header class="dashboard-header">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search orders, customers, SKUs..." id="global-search">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="user-profile">
+                    <span>Welcome, Admin</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </header>
 
-  <section class="controls">
-    <label>Filter:
-      <select id="statusFilter">
-        <option value="all">All</option>
-        <option value="pending">Pending</option>
-        <option value="shipped">Shipped</option>
-        <option value="delivered">Delivered</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-    </label>
-    <label>Sort by:
-      <select id="sortSelect">
-        <option value="date_desc">Date ▼</option>
-        <option value="date_asc">Date ▲</option>
-        <option value="amount_desc">Amount ▼</option>
-        <option value="amount_asc">Amount ▲</option>
-      </select>
-    </label>
-  </section>
+            <section class="summary-cards">
+                <div class="card total-orders">
+                    <div class="card-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="card-details">
+                        <span class="card-title">Total Orders</span>
+                        <span class="card-value" id="total-orders-value">5</span>
+                    </div>
+                </div>
+                <div class="card total-revenue">
+                    <div class="card-icon"><i class="fas fa-rupee-sign"></i></div>
+                    <div class="card-details">
+                        <span class="card-title">Total Revenue</span>
+                        <span class="card-value" id="total-revenue-value">₹95,200</span>
+                    </div>
+                </div>
+                <div class="card pending-orders">
+                    <div class="card-icon"><i class="fas fa-hourglass-half"></i></div>
+                    <div class="card-details">
+                        <span class="card-title">Pending</span>
+                        <span class="card-value" id="pending-orders-value">2</span>
+                    </div>
+                </div>
+                <div class="card delivered-orders">
+                    <div class="card-icon"><i class="fas fa-truck"></i></div>
+                    <div class="card-details">
+                        <span class="card-title">Delivered</span>
+                        <span class="card-value" id="delivered-orders-value">1</span>
+                    </div>
+                </div>
+            </section>
 
-  <section class="table-wrap" aria-label="Orders table">
-    <table id="ordersTable">
-      <thead>
-        <tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
-      </thead>
-      <tbody>
-        <!-- rows injected by JS -->
-      </tbody>
-    </table>
-  </section>
-</main>
+            <section class="orders-section">
+                <h2>Recent Orders</h2>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="status-filter">Status:</label>
+                        <select id="status-filter">
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sort-by">Sort By:</label>
+                        <select id="sort-by">
+                            <option value="date-desc">Date (Newest First)</option>
+                            <option value="date-asc">Date (Oldest First)</option>
+                            <option value="amount-desc">Amount (High to Low)</option>
+                            <option value="amount-asc">Amount (Low to High)</option>
+                        </select>
+                    </div>
+                </div>
 
-<!-- Modal -->
-<div id="modal" class="modal" aria-hidden="true">
-  <div class="modal-panel" role="dialog" aria-modal="true">
-    <button id="modalClose" class="modal-close" aria-label="Close">×</button>
-    <div id="modalContent"></div>
-  </div>
-</div>
+                <div class="orders-list" id="orders-list">
+                    <!-- Order items will be injected here by JavaScript -->
+                    <div class="order-item header">
+                        <span class="order-id">Order ID</span>
+                        <span class="date">Date</span>
+                        <span class="customer">Customer</span>
+                        <span class="items">Items</span>
+                        <span class="amount">Amount</span>
+                        <span class="status">Status</span>
+                        <span class="actions">Actions</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 
-<script src="js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="aurora_script.js"></script>
 </body>
 </html>
